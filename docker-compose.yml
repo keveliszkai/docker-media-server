@@ -1,0 +1,47 @@
+version: "2"
+services:
+
+  dms-openvpn:
+    cap_add:
+      - NET_ADMIN
+    image: kylemanna/openvpn
+    container_name: dms-openvpn
+    ports:
+      - "1194:1194/udp"
+    restart: always
+    volumes:
+      - dms-openvpn-storage:/etc/openvpn
+
+  dms-nextcloud:
+    build:
+      context: .
+      dockerfile: nextcloud.dockerfile
+    container_name: dms-nextcloud
+    restart: unless-stopped
+    environment:
+      - MYSQL_DATABASE=$DATABASE
+      - MYSQL_HOST=dms-database
+      - MYSQL_USER=$USERNAME
+      - MYSQL_PASSWORD=$PASSWORD
+    ports:
+      - $NEXTCLOUD_PORT:80
+    volumes:
+      - dms-nextcloud-storage:/var/www/html
+
+  dms-database:
+    image: mariadb:10.4
+    container_name: dms-database
+    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+    restart: unless-stopped
+    volumes:
+      - dms-database-storage:/var/lib/mysql
+    environment:
+      - MYSQL_DATABASE=$DATABASE
+      - MYSQL_USER=$USERNAME
+      - MYSQL_ROOT_PASSWORD=$PASSWORD
+      - MYSQL_PASSWORD=$PASSWORD
+
+volumes:
+  dms-nextcloud-storage:
+  dms-database-storage:
+  dms-openvpn-storage:
